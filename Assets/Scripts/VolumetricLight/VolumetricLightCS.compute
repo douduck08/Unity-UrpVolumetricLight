@@ -1,0 +1,61 @@
+﻿#pragma kernel CSMain
+
+#define THREAD_GROUP_SIZE_X 1
+#define THREAD_GROUP_SIZE_Y 1
+#define THREAD_GROUP_SIZE_Z 1
+
+#define _ADDITIONAL_LIGHTS
+#define _ADDITIONAL_LIGHT_SHADOWS
+#define _MAIN_LIGHT_SHADOWS
+#define _MAIN_LIGHT_SHADOWS_CASCADE
+#define _SHADOWS_SOFT
+
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
+// Buffers
+Texture2D<float> _CameraDepthTexture;
+RWTexture2D<float4> _VolumetricLightTexture;
+
+float4 _ZBufferParam;
+float4 _CameraPosition;
+float4x4 _FrustumCorners;
+
+// Functions
+float2 GetTexcoord (uint3 id, uint width, uint height) {
+    float2 texelSize = rcp(float2(width, height));
+    float2 texcoord = float2(id.xy) + 0.5;
+    texcoord *= texelSize;
+    return texcoord;
+}
+
+float3 GetRayDirection (float2 uv) {
+    // world space direction
+    float3 direction = _FrustumCorners[0].xyz +
+    (_FrustumCorners[3].xyz - _FrustumCorners[0].xyz) * uv.x +
+    (_FrustumCorners[1].xyz - _FrustumCorners[0].xyz) * uv.y;
+    return direction;
+}
+
+// Kernels
+[numthreads(THREAD_GROUP_SIZE_X, THREAD_GROUP_SIZE_Y, THREAD_GROUP_SIZE_Z)]
+void CSMain (
+in uint3 dispatchThreadID : SV_DispatchThreadID, // DispatchThreadID  = dot(GroupID, numthreads) + GroupThreadId;
+in uint  groupIndex       : SV_GroupIndex, // uint GroupIndex = unique index of a thread inside a group
+in uint3 groupID          : SV_GroupID, // GroupID = index for each dimension inside a ThreadGroupCount
+in uint3 groupThreadID    : SV_GroupThreadID // uint3 GroupThreadId = indices for each dimension inside a group of the current thread
+) {
+    uint width, height;
+    _VolumetricLightTexture.GetDimensions(width, height);
+
+    float2 uv = GetTexcoord(dispatchThreadID, width, height);
+    float3 rayDirection = GetRayDirection(uv);
+
+    float depth = _CameraDepthTexture[dispatchThreadID.xy].r;
+    depth = Linear01Depth(depth, _ZBufferParam);
+    float3 posWS = _CameraPosition.xyz + rayDirection * depth;
+    float4 shadowCoord = TransformWorldToShadowCoord(posWS);
+    float shadow = MainLightRealtimeShadow(shadowCoord);
+
+    _VolumetricLightTexture[dispatchThreadID.xy] = float4(shadow.xxx, 1.0);
+}

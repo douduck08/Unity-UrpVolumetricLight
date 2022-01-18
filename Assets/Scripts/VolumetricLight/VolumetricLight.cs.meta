@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+guid: 1521aa8e2649f404ea63fbcfb175647f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - volumetricLightCS: {fileID: 7200000, guid: 86a7a5f893cdfe24a8e840bc3c43a5ab, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
