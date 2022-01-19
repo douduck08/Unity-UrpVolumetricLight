@@ -9,16 +9,16 @@ public class VolumetricLightComposePass : ScriptableRenderPass {
     const string profilerTag = "Volumetric Light Compose";
     ProfilingSampler profilingSampler = new ProfilingSampler (profilerTag);
 
-    RenderTargetHandle volumetricLightTexture;
+    Material volumetricLightMaterial;
 
-    public VolumetricLightComposePass (RenderPassEvent renderPassEvent, RenderTargetHandle volumetricLightTexture) {
+    public VolumetricLightComposePass (RenderPassEvent renderPassEvent, Material volumetricLightMaterial) {
         this.renderPassEvent = renderPassEvent;
-        this.volumetricLightTexture = volumetricLightTexture;
+        this.volumetricLightMaterial = volumetricLightMaterial;
     }
 
     public override void Execute (ScriptableRenderContext context, ref RenderingData renderingData) {
         var cmd = CommandBufferPool.Get (profilerTag);
-        Blit (cmd, volumetricLightTexture.id, BuiltinRenderTextureType.CurrentActive);
+        cmd.Blit (BuiltinRenderTextureType.None, BuiltinRenderTextureType.CurrentActive, volumetricLightMaterial, 1);
         context.ExecuteCommandBuffer (cmd);
         CommandBufferPool.Release (cmd);
     }

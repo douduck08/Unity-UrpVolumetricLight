@@ -5,16 +5,18 @@ using UnityEngine.Rendering.Universal;
 
 public class VolumetricLight : ScriptableRendererFeature {
 
-    [SerializeField] ComputeShader volumetricLightCS;
-    RenderTargetHandle volumetricLightTexture;
+    [SerializeField] Shader volumetricLightShader;
 
+    Material volumetricLightMaterial;
     VolumetricLightPass volumetricLightPass;
     VolumetricLightComposePass volumetricLightComposePass;
 
     public override void Create () {
-        volumetricLightTexture.Init (ShaderIds.volumetricLightTexture);
-        volumetricLightPass = new VolumetricLightPass (RenderPassEvent.AfterRenderingOpaques, volumetricLightCS, volumetricLightTexture);
-        volumetricLightComposePass = new VolumetricLightComposePass (RenderPassEvent.BeforeRenderingPostProcessing, volumetricLightTexture);
+        if (volumetricLightMaterial == null) {
+            volumetricLightMaterial = new Material (volumetricLightShader);
+        }
+        volumetricLightPass = new VolumetricLightPass (RenderPassEvent.AfterRenderingPrePasses, volumetricLightMaterial);
+        volumetricLightComposePass = new VolumetricLightComposePass (RenderPassEvent.BeforeRenderingPostProcessing, volumetricLightMaterial);
     }
 
     public override void AddRenderPasses (ScriptableRenderer renderer, ref RenderingData renderingData) {

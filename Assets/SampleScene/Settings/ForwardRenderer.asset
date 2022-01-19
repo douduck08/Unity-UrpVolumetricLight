@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: VolumetricLight
   m_EditorClassIdentifier: 
   m_Active: 1
-  volumetricLightCS: {fileID: 7200000, guid: 86a7a5f893cdfe24a8e840bc3c43a5ab, type: 3}
+  volumetricLightShader: {fileID: 4800000, guid: a0c5c94815dc9ef4b86fe0070fe387ff,
+    type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
