@@ -6,35 +6,33 @@ using UnityEngine.Rendering.Universal;
 
 public class VolumetricLightPass : ScriptableRenderPass {
 
-    public static class ShaderIds {
-        public readonly static string volumetricLightTexture = "_VolumetricLightTexture";
-        public readonly static string cameraDepthTexture = "_CameraDepthTexture";
-        public readonly static string mainShadowmap = "_MainLightShadowmapTexture";
-    }
 
     const string profilerTag = "Volumetric Light";
     ProfilingSampler profilingSampler = new ProfilingSampler (profilerTag);
 
     Material volumetricLightMaterial;
+    VolumetricLight.Settings settings;
     RenderTargetHandle volumetricLightTexture;
-    // RenderTargetHandle cameraDepthTexture;
-    // RenderTargetHandle mainShadowmap;
+
     Vector3[] frustumCorners = new Vector3[4];
     Matrix4x4 frustumCornersMatrix;
     Vector4 zBufferParam;
+    Vector4 texelSize;
 
     public VolumetricLightPass (RenderPassEvent renderPassEvent, Material volumetricLightMaterial) {
         this.renderPassEvent = renderPassEvent;
         this.volumetricLightMaterial = volumetricLightMaterial;
+        volumetricLightTexture.Init (VolumetricLight.ShaderIds.volumetricLightTexture);
+    }
 
-        volumetricLightTexture.Init (ShaderIds.volumetricLightTexture);
-        // cameraDepthTexture.Init (ShaderIds.cameraDepthTexture);
-        // mainShadowmap.Init (ShaderIds.mainShadowmap);
+    public void Setup (VolumetricLight.Settings settings) {
+        this.settings = settings;
     }
 
     public override void Execute (ScriptableRenderContext context, ref RenderingData renderingData) {
         ref var cameraData = ref renderingData.cameraData;
-        SetCameraParameters (volumetricLightMaterial, cameraData.camera);
+        SetCameraParameters (cameraData.camera);
+        SetMaterialParameters ();
 
         var cmd = CommandBufferPool.Get (profilerTag);
         cmd.Blit (BuiltinRenderTextureType.None, volumetricLightTexture.id, volumetricLightMaterial, 0);
@@ -44,8 +42,13 @@ public class VolumetricLightPass : ScriptableRenderPass {
 
     public override void Configure (CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
         var descriptor = cameraTextureDescriptor;
+        descriptor.useMipMap = false;
+        descriptor.width = descriptor.width >> settings.downsample;
+        descriptor.height = descriptor.height >> settings.downsample;
         cmd.GetTemporaryRT (volumetricLightTexture.id, descriptor);
         ConfigureTarget (volumetricLightTexture.id);
+
+        texelSize = new Vector4 (1f / descriptor.width, 1f / descriptor.height, descriptor.width, descriptor.height);
     }
 
     public override void FrameCleanup (CommandBuffer cmd) {
@@ -55,13 +58,20 @@ public class VolumetricLightPass : ScriptableRenderPass {
         cmd.ReleaseTemporaryRT (volumetricLightTexture.id);
     }
 
-    void SetCameraParameters (Material material, Camera camera) {
+    void SetCameraParameters (Camera camera) {
         var transform = camera.transform;
         camera.CalculateFrustumCorners (new Rect (0, 0, 1, 1), camera.farClipPlane, Camera.MonoOrStereoscopicEye.Mono, frustumCorners);
         frustumCornersMatrix.SetRow (0, transform.localToWorldMatrix.MultiplyVector (frustumCorners[0]));
         frustumCornersMatrix.SetRow (1, transform.localToWorldMatrix.MultiplyVector (frustumCorners[1]));
         frustumCornersMatrix.SetRow (2, transform.localToWorldMatrix.MultiplyVector (frustumCorners[2]));
         frustumCornersMatrix.SetRow (3, transform.localToWorldMatrix.MultiplyVector (frustumCorners[3]));
-        material.SetMatrix ("_FrustumCorners", frustumCornersMatrix);
+        volumetricLightMaterial.SetMatrix ("_FrustumCorners", frustumCornersMatrix);
+    }
+
+    void SetMaterialParameters () {
+        volumetricLightMaterial.SetInt ("_SampleNumber", settings.sampleNumber);
+        volumetricLightMaterial.SetFloat ("_Scattering", settings.scattering);
+        volumetricLightMaterial.SetFloat ("_RandomStrength", settings.randomStrength);
+        volumetricLightMaterial.SetVector ("_TexelSize", texelSize);
     }
 }

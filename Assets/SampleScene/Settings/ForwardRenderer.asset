@@ -15,6 +15,17 @@ MonoBehaviour:
   m_Active: 1
   volumetricLightShader: {fileID: 4800000, guid: a0c5c94815dc9ef4b86fe0070fe387ff,
     type: 3}
+  blueNoiseTextures:
+  - {fileID: 2800000, guid: 81200413a40918d4d8702e94db29911c, type: 3}
+  - {fileID: 2800000, guid: d50c5e07c9911a74982bddf7f3075e7b, type: 3}
+  - {fileID: 2800000, guid: 1134690bf9216164dbc75050e35b7900, type: 3}
+  - {fileID: 2800000, guid: 7ce2118f74614a94aa8a0cdf2e6062c3, type: 3}
+  settings:
+    sampleNumber: 8
+    downsample: 0
+    blurSteps: 2
+    scattering: 0.8
+    randomStrength: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
