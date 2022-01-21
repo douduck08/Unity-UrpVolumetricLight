@@ -43,8 +43,10 @@ public class VolumetricLightPass : ScriptableRenderPass {
     public override void Configure (CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
         var descriptor = cameraTextureDescriptor;
         descriptor.useMipMap = false;
-        descriptor.width = descriptor.width >> settings.downsample;
-        descriptor.height = descriptor.height >> settings.downsample;
+        if (settings.downsample) {
+            descriptor.width = descriptor.width >> 1;
+            descriptor.height = descriptor.height >> 1;
+        }
         cmd.GetTemporaryRT (volumetricLightTexture.id, descriptor);
         ConfigureTarget (volumetricLightTexture.id);
 

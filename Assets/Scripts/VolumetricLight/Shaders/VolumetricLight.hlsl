@@ -1,7 +1,7 @@
 #define _MAIN_LIGHT_SHADOWS
 #define _MAIN_LIGHT_SHADOWS_CASCADE
-// #define _ADDITIONAL_LIGHTS
-// #define _ADDITIONAL_LIGHT_SHADOWS
+#define _ADDITIONAL_LIGHTS
+#define _ADDITIONAL_LIGHT_SHADOWS
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
@@ -17,8 +17,8 @@ SAMPLER(sampler_BlueNoise);
 float4 _BlueNoise_TexelSize;
 
 int _SampleNumber;
-float _Scattering;
 float _RandomStrength;
+float _Scattering;
 float4 _TexelSize;
 
 float HG(float vdotl, float g) {
@@ -33,26 +33,39 @@ float GetMainLightAttenuation(float3 positionWS) {
 }
 
 float4 Fragment(Varyings input) : SV_Target {
-    float depth = SAMPLE_TEXTURE2D_X(_CameraDepthTexture, sampler_CameraDepthTexture, input.uv).r;
-
     // blue noise
     float2 noiseUv = input.uv * _TexelSize.zw * _BlueNoise_TexelSize.xy;
     float blueNoise = SAMPLE_TEXTURE2D_LOD(_BlueNoise, sampler_BlueNoise, noiseUv, 0).a;
 
-    Light mainLight = GetMainLight();
-    float3 v = normalize(input.direction);
-    float vdotl = dot(v, mainLight.direction);
-    float intensity = HG(vdotl, _Scattering) * length(input.direction);
-
+    // prepare ray marching
+    float depth = SAMPLE_TEXTURE2D_X(_CameraDepthTexture, sampler_CameraDepthTexture, input.uv).r;
     float farDst = Linear01Depth(depth, _ZBufferParams);
     float stepSize = farDst / _SampleNumber;
     float sampleDst = lerp(0.5, blueNoise, _RandomStrength) * stepSize;
+
+    // light data
+    Light mainLight = GetMainLight();
+    float3 v = normalize(input.direction);
+    float mainVdotl = dot(v, mainLight.direction);
+    float mainScattering = HG(mainVdotl, _Scattering);
+    uint pixelLightCount = _AdditionalLightsCount.x;
+    
+    // ray marching
     float3 attenuation = 0.0;
     for(int i = 0; i < _SampleNumber; ++i) {
         float3 positionWS = _WorldSpaceCameraPos.xyz + input.direction * sampleDst;
-        attenuation += GetMainLightAttenuation(positionWS) * stepSize * intensity * mainLight.color;
+        attenuation += (GetMainLightAttenuation(positionWS) * stepSize * mainScattering) * mainLight.color;
+
+        for (uint lightIndex = 0u; lightIndex < pixelLightCount; ++lightIndex) {
+            Light light = GetAdditionalPerObjectLight(lightIndex, positionWS);
+            float vdotl = dot(v, light.direction);
+            float scattering = HG(vdotl, _Scattering);
+            attenuation += (light.distanceAttenuation * light.shadowAttenuation * stepSize * scattering) * light.color;
+        }
+
         sampleDst += stepSize;
     }
 
-    return float4(attenuation, 1.0);
+    float intensity = length(input.direction);
+    return float4(attenuation * intensity, 1.0);
 }

@@ -29,17 +29,15 @@ public class VolumetricLightComposePass : ScriptableRenderPass {
 
     public override void Execute (ScriptableRenderContext context, ref RenderingData renderingData) {
         var cmd = CommandBufferPool.Get (profilerTag);
-
-        if (settings.blurSteps == 0) {
-            cmd.Blit (BuiltinRenderTextureType.None, cameraColorTexture.id, volumetricLightMaterial, 1);
-        } else if (settings.blurSteps == 1) {
+        if (settings.blurSteps == 1) {
             cmd.Blit (BuiltinRenderTextureType.None, cameraColorTexture.id, volumetricLightMaterial, 2);
         } else if (settings.blurSteps == 2) {
             cmd.Blit (BuiltinRenderTextureType.None, tempTexture.id, volumetricLightMaterial, 3);
             cmd.SetGlobalTexture (volumetricLightTexture.id, tempTexture.id);
             cmd.Blit (BuiltinRenderTextureType.None, cameraColorTexture.id, volumetricLightMaterial, 2);
+        } else {
+            cmd.Blit (BuiltinRenderTextureType.None, cameraColorTexture.id, volumetricLightMaterial, 1);
         }
-
         context.ExecuteCommandBuffer (cmd);
         CommandBufferPool.Release (cmd);
     }
