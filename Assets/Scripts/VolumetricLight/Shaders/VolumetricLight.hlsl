@@ -18,6 +18,7 @@ float4 _BlueNoise_TexelSize;
 
 int _SampleNumber;
 float _RandomStrength;
+float _Intensity;
 float _Scattering;
 float4 _TexelSize;
 
@@ -66,6 +67,6 @@ float4 Fragment(Varyings input) : SV_Target {
         sampleDst += stepSize;
     }
 
-    float intensity = length(input.direction);
+    float intensity = length(input.direction) * _Intensity;
     return float4(attenuation * intensity, 1.0);
 }

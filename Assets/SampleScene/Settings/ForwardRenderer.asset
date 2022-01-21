@@ -24,8 +24,9 @@ MonoBehaviour:
     downsample: 0
     sampleNumber: 8
     randomStrength: 1
-    scattering: 0.8
-    blurSteps: 2
+    intensity: 1
+    scattering: 0.6
+    blurSteps: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -24,10 +24,11 @@ public class VolumetricLight : ScriptableRendererFeature {
         public bool downsample;
         [Range (2, 128)] public int sampleNumber;
         [Range (0f, 1f)] public float randomStrength;
+        [Range (0f, 10f)] public float intensity;
         [Range (0f, 0.99f)] public float scattering;
         [Range (0, 2)] public int blurSteps;
     }
-    public Settings settings = new Settings { sampleNumber = 4, scattering = 0.5f };
+    public Settings settings = new Settings { sampleNumber = 4, intensity = 1f, scattering = 0.5f };
 
     public override void Create () {
         if (volumetricLightMaterial == null) {
@@ -46,7 +47,7 @@ public class VolumetricLight : ScriptableRendererFeature {
     }
 
     void SetupNoise () {
-        if (blueNoiseTextures != null && blueNoiseTextures.Length > 0) {
+        if (volumetricLightMaterial != null && blueNoiseTextures != null && blueNoiseTextures.Length > 0) {
             noiseIndex = (noiseIndex + 1) % blueNoiseTextures.Length;
             volumetricLightMaterial.SetTexture ("_BlueNoise", blueNoiseTextures[noiseIndex]);
         }

@@ -47,7 +47,7 @@ public class VolumetricLightPass : ScriptableRenderPass {
             descriptor.width = descriptor.width >> 1;
             descriptor.height = descriptor.height >> 1;
         }
-        cmd.GetTemporaryRT (volumetricLightTexture.id, descriptor);
+        cmd.GetTemporaryRT (volumetricLightTexture.id, descriptor, FilterMode.Bilinear);
         ConfigureTarget (volumetricLightTexture.id);
 
         texelSize = new Vector4 (1f / descriptor.width, 1f / descriptor.height, descriptor.width, descriptor.height);
@@ -72,8 +72,9 @@ public class VolumetricLightPass : ScriptableRenderPass {
 
     void SetMaterialParameters () {
         volumetricLightMaterial.SetInt ("_SampleNumber", settings.sampleNumber);
-        volumetricLightMaterial.SetFloat ("_Scattering", settings.scattering);
         volumetricLightMaterial.SetFloat ("_RandomStrength", settings.randomStrength);
+        volumetricLightMaterial.SetFloat ("_Intensity", settings.intensity);
+        volumetricLightMaterial.SetFloat ("_Scattering", settings.scattering);
         volumetricLightMaterial.SetVector ("_TexelSize", texelSize);
     }
 }
